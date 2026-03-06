@@ -313,10 +313,3 @@ func categoryName(c core.FileCategory) string {
 		return "Unknown"
 	}
 }
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
