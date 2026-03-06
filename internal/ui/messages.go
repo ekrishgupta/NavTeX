@@ -34,3 +34,8 @@ type ErrorMsg struct{ Err error }
 type EditorClosedMsg struct {
 	Err error
 }
+
+// FileEventMsg is sent when the filesystem watcher detects a modification.
+type FileEventMsg struct {
+	Name string
+}

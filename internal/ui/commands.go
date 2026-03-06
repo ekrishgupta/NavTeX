@@ -58,3 +58,17 @@ func (m Model) openEditorCmd(path string, lineNum int) tea.Cmd {
 		return EditorClosedMsg{Err: err}
 	})
 }
+
+func (m Model) listenForFileEventCmd() tea.Cmd {
+	return func() tea.Msg {
+		if m.watcher == nil {
+			return nil
+		}
+		// Block until an event occurs
+		event, ok := <-m.watcher.Events
+		if !ok {
+			return nil // watcher closed
+		}
+		return FileEventMsg{Name: event}
+	}
+}

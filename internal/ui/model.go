@@ -26,6 +26,7 @@ type Model struct {
 	actionBar   ActionBar
 	compiler    *core.Compiler
 	filterInput textinput.Model
+	watcher     *core.Watcher
 
 	// Modals
 	errorModal      ErrorModal
@@ -50,6 +51,8 @@ func NewModel(root, engine string) Model {
 	ti.Prompt = " / "
 	ti.CharLimit = 50
 
+	w, _ := core.NewWatcher(root)
+
 	return Model{
 		rootPath:        root,
 		engine:          engine,
@@ -58,6 +61,7 @@ func NewModel(root, engine string) Model {
 		actionBar:       NewActionBar(),
 		compiler:        core.NewCompiler(),
 		filterInput:     ti,
+		watcher:         w,
 		errorModal:      NewErrorModal(),
 		newProjectModal: NewNewProjectModal(),
 		helpModal:       NewHelpModal(),
@@ -69,6 +73,7 @@ func (m Model) Init() tea.Cmd {
 	return tea.Batch(
 		textinput.Blink,
 		m.scanDirCmd(m.rootPath),
+		m.listenForFileEventCmd(),
 	)
 }
 
@@ -255,6 +260,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Err != nil {
 			// Could show an error indicator, but usually it's fine
 		}
+
+	case FileEventMsg:
+		// Queue a rescan and immediately re-listen
+		cmds = append(cmds, m.scanDirCmd(m.rootPath), m.listenForFileEventCmd())
 
 	case ErrorMsg:
 		// General error handling
