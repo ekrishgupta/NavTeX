@@ -94,3 +94,40 @@ func TestBibMetadata_Basic(t *testing.T) {
 		t.Errorf("Expected author 'Smith, John', got '%s'", entries[0].Authors)
 	}
 }
+
+func TestBibMetadata_RichFields(t *testing.T) {
+	content := `
+@article{key2,
+  title = {Rich Paper},
+  doi = {10.1234/test},
+  url = {https://example.com},
+  keywords = {latex, tui, go},
+  abstract = {This is a very interesting abstract.}
+}
+`
+	tmpFile, err := os.CreateTemp("", "test-*.bib")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpFile.Name())
+	os.WriteFile(tmpFile.Name(), []byte(content), 0o644)
+
+	entries, err := BibMetadata(tmpFile.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	e := entries[0]
+	if e.DOI != "10.1234/test" {
+		t.Errorf("Expected DOI 10.1234/test, got %s", e.DOI)
+	}
+	if e.URL != "https://example.com" {
+		t.Errorf("Expected URL https://example.com, got %s", e.URL)
+	}
+	if len(e.Keywords) != 3 {
+		t.Errorf("Expected 3 keywords, got %d", len(e.Keywords))
+	}
+	if e.Abstract != "This is a very interesting abstract." {
+		t.Errorf("Expected abstract, got '%s'", e.Abstract)
+	}
+}
