@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 // BuildStatus represents the current compiler status.
@@ -87,8 +89,8 @@ func (ab ActionBar) View() string {
 	}
 
 	// Layout: shortcuts on left, status on right
-	leftWidth := lipglossWidth(left)
-	rightWidth := lipglossWidth(statusStr)
+	leftWidth := lipgloss.Width(left)
+	rightWidth := lipgloss.Width(statusStr)
 	gap := ab.width - leftWidth - rightWidth - 4
 
 	if gap < 0 {
@@ -98,31 +100,4 @@ func (ab ActionBar) View() string {
 	bar := left + strings.Repeat(" ", gap) + statusStr
 
 	return ActionBarStyle.Width(ab.width).Render(bar)
-}
-
-// lipglossWidth estimates the printed width of a styled string.
-func lipglossWidth(s string) int {
-	// Strip ANSI escape codes for width calculation
-	plain := stripAnsi(s)
-	return len(plain)
-}
-
-// stripAnsi removes ANSI escape sequences from a string.
-func stripAnsi(s string) string {
-	var result strings.Builder
-	inEscape := false
-	for _, r := range s {
-		if r == '\033' {
-			inEscape = true
-			continue
-		}
-		if inEscape {
-			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
-				inEscape = false
-			}
-			continue
-		}
-		result.WriteRune(r)
-	}
-	return result.String()
 }
