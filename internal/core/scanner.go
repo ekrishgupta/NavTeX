@@ -1,3 +1,4 @@
+// Package core contains the platform-independent logic for NavTex.
 package core
 
 import (
@@ -6,7 +7,7 @@ import (
 	"strings"
 )
 
-// FileCategory represents the role a file plays in a LaTeX project.
+// FileCategory represents the role of a file in a LaTeX project.
 type FileCategory int
 
 const (
