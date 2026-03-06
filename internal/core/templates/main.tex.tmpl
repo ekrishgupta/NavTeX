@@ -1,0 +1,56 @@
+\documentclass[12pt, a4paper]{{{DOCCLASS}}}
+
+% ── Encoding & Language ──
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+
+% ── Typography ──
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ── Math ──
+\usepackage{amsmath, amssymb, amsthm}
+
+% ── Graphics & Figures ──
+\usepackage{graphicx}
+\graphicspath{{images/}}
+\usepackage{float}
+\usepackage{caption}
+
+% ── Tables ──
+\usepackage{booktabs}
+\usepackage{array}
+
+% ── References & Links ──
+\usepackage[colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue]{hyperref}
+\usepackage[numbers]{natbib}
+
+% ── Layout ──
+\usepackage{geometry}
+\geometry{margin=1in}
+
+% ── Document Info ──
+\title{{{TITLE}}}
+\author{{{AUTHOR}}}
+\date{{{DATE}}}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    % Write your abstract here.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+% Start writing here.
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\end{document}
