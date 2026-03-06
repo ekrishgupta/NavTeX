@@ -58,25 +58,6 @@ func ParseLog(path string) ([]LogEntry, error) {
 			currentFile = m[1]
 		}
 
-		// File-line-error format (triggered by -file-line-error flag)
-		if m := reFileLineError.FindStringSubmatch(line); m != nil {
-			lineNum, _ := strconv.Atoi(m[2])
-			entries = append(entries, LogEntry{
-				Severity: "error",
-				Line:     lineNum,
-				Message:  strings.TrimSpace(m[3]),
-				File:     m[1],
-			})
-			pendingError = ""
-			continue
-		}
-
-		// TeX error: ! ...
-		if m := reTexError.FindStringSubmatch(line); m != nil {
-			pendingError = strings.TrimSpace(m[1])
-			continue
-		}
-
 		// Line location after an error
 		if pendingError != "" {
 			if m := reLineLoc.FindStringSubmatch(line); m != nil {
@@ -96,15 +77,29 @@ func ParseLog(path string) ([]LogEntry, error) {
 			}
 		}
 
-		// If we had a pending error and hit an empty line, flush it
-		if pendingError != "" && line == "" {
+		// File-line-error format
+		if m := reFileLineError.FindStringSubmatch(line); m != nil {
+			if pendingError != "" {
+				entries = append(entries, LogEntry{Severity: "error", Line: 0, Message: pendingError, File: currentFile})
+				pendingError = ""
+			}
+			lineNum, _ := strconv.Atoi(m[2])
 			entries = append(entries, LogEntry{
 				Severity: "error",
-				Line:     0,
-				Message:  pendingError,
-				File:     currentFile,
+				Line:     lineNum,
+				Message:  strings.TrimSpace(m[3]),
+				File:     m[1],
 			})
-			pendingError = ""
+			continue
+		}
+
+		// TeX error: ! ...
+		if m := reTexError.FindStringSubmatch(line); m != nil {
+			if pendingError != "" {
+				entries = append(entries, LogEntry{Severity: "error", Line: 0, Message: pendingError, File: currentFile})
+			}
+			pendingError = strings.TrimSpace(m[1])
+			continue
 		}
 
 		// LaTeX/Package warnings
