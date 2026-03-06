@@ -17,6 +17,9 @@ type Inspector struct {
 	height   int
 	focused  bool
 
+	// Bib selection
+	selectedBibIdx int
+
 	// Cached metadata
 	texMeta   *core.TexMeta
 	bibMeta   []core.BibEntry
