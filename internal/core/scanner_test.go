@@ -43,3 +43,23 @@ func TestScanDirectory_Source(t *testing.T) {
 		t.Errorf("Expected main.tex, got %s", pf.Source[0].Name)
 	}
 }
+
+func TestScanDirectory_Assets(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "navtex-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	os.WriteFile(tmpDir+"/fig1.png", []byte(""), 0o644)
+	os.WriteFile(tmpDir+"/photo.jpg", []byte(""), 0o644)
+
+	pf, err := ScanDirectory(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(pf.Assets) != 2 {
+		t.Errorf("Expected 2 assets, got %d", len(pf.Assets))
+	}
+}
