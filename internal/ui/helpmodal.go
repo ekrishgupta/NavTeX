@@ -56,6 +56,7 @@ func (hm HelpModal) View(termWidth, termHeight int) string {
 		{"n", "New project wizard"},
 		{"y", "Yank cite key to clipboard"},
 		{"/", "Search files"},
+		{"Enter", "Open editor / Jump to line"},
 		{"?", "Toggle this help"},
 		{"q / Ctrl+C", "Quit"},
 	}
@@ -89,7 +90,7 @@ func (hm HelpModal) View(termWidth, termHeight int) string {
 	return lipgloss.Place(termWidth, termHeight, lipgloss.Center, lipgloss.Center, modal)
 }
 
-// padRight pads a string with spaces to the given width.
+// padRight pads a string with spaces to the given width using formatting.
 func padRight(s string, width int) string {
 	if len(s) >= width {
 		return s
