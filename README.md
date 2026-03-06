@@ -50,10 +50,12 @@ navtex --engine lualatex
 | `↑` / `k` | Move cursor up (Browser/Inspector) |
 | `↓` / `j` | Move cursor down (Browser/Inspector) |
 | `Tab` | Switch focus between Browser and Inspector panes |
-| `F5` | Compile LaTeX document |
+| `F5` | Compile LaTeX document (Uses `latexmk` automatically if installed) |
 | `F6` | Clean auxiliary files |
 | `F7` | Open compiled PDF in system viewer |
 | `y` | Yank BibTeX citekey to system clipboard (when focused on Data) |
+| `Enter`| Open selected file in your `$EDITOR` (from Browser) OR jump to failing line (from Error Modal) |
+| `/` | Fuzzy filter files in the browser |
 | `n` | New project wizard |
 | `h` | Toggle Shadow Bin (auxiliary files) |
 | `?` | Toggle Help overlay |
@@ -66,6 +68,13 @@ navtex --engine lualatex
 - **Assets**: Images and non-LaTeX PDFs.
 - **Output**: The compiled PDF matching your source.
 - **Shadow Bin**: Auxiliary files (`.aux`, `.log`, `.synctex.gz`, etc.), hidden by default.
+
+### Editor & Live Workspace Integration
+
+NavTex acts as the command center for your terminal-based editor (Neovim, VSCode, etc.):
+- **File Watching**: Files modified in your editor instantly auto-refresh the UI and metadata counters.
+- **Jump-to-Line**: Parse LaTeX errors and press Enter to instantly warp your editor to the exact failing line.
+- **Project Configuration**: Define a `.navtex.yaml` in your workspace to hardcode an `engine` preference (overrides default options).
 
 ### Rich Metadata & BibMan Integration
 
