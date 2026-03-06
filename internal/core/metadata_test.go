@@ -62,3 +62,35 @@ One two three four five.
 		t.Errorf("Expected 5 words, got %d", meta.WordCount)
 	}
 }
+
+func TestBibMetadata_Basic(t *testing.T) {
+	content := `
+@article{key1,
+  author = {Smith, John},
+  title = {A Great Paper},
+  year = {2023},
+  journal = {Journal of Testing}
+}
+`
+	tmpFile, err := os.CreateTemp("", "test-*.bib")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpFile.Name())
+	os.WriteFile(tmpFile.Name(), []byte(content), 0o644)
+
+	entries, err := BibMetadata(tmpFile.Name())
+	if err != nil {
+		t.Fatalf("BibMetadata failed: %v", err)
+	}
+
+	if len(entries) != 1 {
+		t.Fatalf("Expected 1 entry, got %d", len(entries))
+	}
+	if entries[0].Key != "key1" {
+		t.Errorf("Expected key 'key1', got '%s'", entries[0].Key)
+	}
+	if entries[0].Authors != "Smith, John" {
+		t.Errorf("Expected author 'Smith, John', got '%s'", entries[0].Authors)
+	}
+}
