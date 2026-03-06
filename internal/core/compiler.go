@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -75,28 +76,45 @@ func (c *Compiler) Compile(texPath string, engine string) (*CompileResult, error
 		return nil, fmt.Errorf("%s not found in PATH: %w", engine, err)
 	}
 
-	// First pass
-	args := []string{
-		"-interaction=nonstopmode",
-		"-halt-on-error",
-		"-file-line-error",
-		absPath,
-	}
-
 	var output strings.Builder
+	var result bool
 
-	result := c.runEngine(engine, args, dir, &output)
+	// Determine if latexmk is available
+	if _, err := exec.LookPath("latexmk"); err == nil {
+		// Use latexmk
+		args := []string{
+			"-interaction=nonstopmode",
+			"-halt-on-error",
+			"-file-line-error",
+		}
+		if engine == "pdflatex" {
+			args = append(args, "-pdf")
+		} else if engine == "lualatex" {
+			args = append(args, "-lualatex")
+		} else if engine == "xelatex" {
+			args = append(args, "-xelatex")
+		}
+		args = append(args, absPath)
 
-	// Check if bibtex is needed (look for \bibliography or \addbibresource)
-	if result {
-		needsBibtex := c.checkBibtexNeeded(absPath)
-		if needsBibtex {
-			// Run bibtex
-			c.runBibtex(baseName, dir, &output)
-			// Second pass
-			c.runEngine(engine, args, dir, &output)
-			// Third pass for references
-			result = c.runEngine(engine, args, dir, &output)
+		result = c.runEngine("latexmk", args, dir, &output)
+	} else {
+		// Fallback to manual loop
+		args := []string{
+			"-interaction=nonstopmode",
+			"-halt-on-error",
+			"-file-line-error",
+			absPath,
+		}
+
+		result = c.runEngine(engine, args, dir, &output)
+
+		if result {
+			needsBibtex := c.checkBibtexNeeded(absPath)
+			if needsBibtex {
+				c.runBibtex(baseName, dir, &output)
+				c.runEngine(engine, args, dir, &output)
+				result = c.runEngine(engine, args, dir, &output)
+			}
 		}
 	}
 
@@ -153,7 +171,7 @@ func (c *Compiler) checkBibtexNeeded(texPath string) bool {
 
 // readFileContent reads a file and returns its content as a string.
 func readFileContent(path string) (string, error) {
-	data, err := exec.Command("cat", path).Output()
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
 	}
