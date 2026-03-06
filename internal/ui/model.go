@@ -235,21 +235,6 @@ func (m Model) View() string {
 
 // ── Commands ──
 
-type ScannedMsg struct{ Files *core.ProjectFiles }
-type BuildFinishedMsg struct {
-	Result *core.CompileResult
-	Err    error
-}
-type LogParsedMsg struct {
-	Entries []core.LogEntry
-	Err     error
-}
-type CleanedMsg struct {
-	Files []string
-	Err   error
-}
-type ErrorMsg struct{ Err error }
-
 func (m Model) scanDirCmd(root string) tea.Cmd {
 	return func() tea.Msg {
 		pf, err := core.ScanDirectory(root)
