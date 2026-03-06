@@ -84,9 +84,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case tea.KeyEscape:
 				m.errorModal.Hide()
 			case tea.KeyUp, tea.KeyPgUp:
-				m.errorModal.ScrollUp()
+				m.errorModal.MoveUp()
 			case tea.KeyDown, tea.KeyPgDown:
-				m.errorModal.ScrollDown()
+				m.errorModal.MoveDown()
+			case tea.KeyEnter:
+				// Jump to line
+				if entry := m.errorModal.SelectedEntry(); entry != nil && entry.File != "" {
+					return m, m.openEditorCmd(entry.File, entry.Line)
+				}
 			}
 			return m, nil
 		}
@@ -135,6 +140,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			key := m.inspector.SelectedBibKey()
 			if key != "" {
 				YankToClipboard(key)
+			}
+
+		case "enter":
+			if m.focused == 0 {
+				path, cat := m.browser.SelectedFile()
+				if path != "" && cat != core.CategoryOutput && cat != core.CategoryAssets {
+					// Open in editor (only source, data, aux)
+					return m, m.openEditorCmd(path, 0)
+				}
 			}
 
 		case "up", "k":
@@ -195,6 +209,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.rootPath = msg.Path
 			m.newProjectModal.Hide()
 			cmds = append(cmds, m.scanDirCmd(m.rootPath))
+		}
+
+	case EditorClosedMsg:
+		if msg.Err != nil {
+			// Could show an error indicator, but usually it's fine
 		}
 
 	case ErrorMsg:
