@@ -159,7 +159,8 @@ func countWords(content string) int {
 
 	// Remove comments (lines starting with %)
 	lines := strings.Split(content, "\n")
-	var cleaned []string
+	var textBuilder strings.Builder
+	textBuilder.Grow(len(content))
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "%") {
@@ -167,23 +168,26 @@ func countWords(content string) int {
 		}
 		// Remove inline comments (not escaped)
 		if idx := strings.Index(line, "%"); idx > 0 {
-			if idx == 0 || line[idx-1] != '\\' {
+			if line[idx-1] != '\\' {
 				line = line[:idx]
 			}
 		}
-		cleaned = append(cleaned, line)
+		textBuilder.WriteString(line)
+		textBuilder.WriteByte(' ')
 	}
-	text := strings.Join(cleaned, " ")
+	text := textBuilder.String()
 
 	// Strip LaTeX commands
 	text = reBeginEnd.ReplaceAllString(text, " ")
 	text = reTexCommand.ReplaceAllString(text, " ")
 
-	// Remove braces
-	text = strings.ReplaceAll(text, "{", " ")
-	text = strings.ReplaceAll(text, "}", " ")
-	text = strings.ReplaceAll(text, "[", " ")
-	text = strings.ReplaceAll(text, "]", " ")
+	// Remove braces and brackets
+	text = strings.Map(func(r rune) rune {
+		if r == '{' || r == '}' || r == '[' || r == ']' {
+			return ' '
+		}
+		return r
+	}, text)
 
 	// Count words
 	count := 0
