@@ -19,7 +19,7 @@ func (m Model) scanDirCmd(root string) tea.Cmd {
 
 func (m Model) compileCmd(path string) tea.Cmd {
 	return func() tea.Msg {
-		res, err := m.compiler.Compile(path, m.engine)
+		res, err := m.compiler.Compile(path, m.rootPath, m.engine)
 		return BuildFinishedMsg{Result: res, Err: err}
 	}
 }
