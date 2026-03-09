@@ -66,24 +66,23 @@ func (c *Compiler) Diff(oldPath, oldContent string, newPath string, rootPath str
 		engine = "pdflatex"
 	}
 
+	tempDir, err := os.MkdirTemp("", "navtex-diff-*")
+	if err != nil {
+		return nil, fmt.Errorf("creating temp dir: %w", err)
+	}
+
 	oldTexPath := oldPath
-	var toRemove string
 
 	if oldTexPath == "" {
-		// Create temporary old.tex
-		oldTexDir := filepath.Dir(newPath)
-		oldTexPath = filepath.Join(oldTexDir, "navtex_old.tex")
+		// Create temporary old.tex in temp directory
+		oldTexPath = filepath.Join(tempDir, "navtex_old.tex")
 		err := os.WriteFile(oldTexPath, []byte(oldContent), 0644)
 		if err != nil {
 			return nil, fmt.Errorf("writing old tex: %w", err)
 		}
-		toRemove = oldTexPath
-	}
-	if toRemove != "" {
-		defer os.Remove(toRemove)
 	}
 
-	diffTexPath := filepath.Join(filepath.Dir(newPath), "diff.tex")
+	diffTexPath := filepath.Join(tempDir, "diff.tex")
 
 	// Run latexdiff
 	if _, err := exec.LookPath("latexdiff"); err != nil {
@@ -101,7 +100,12 @@ func (c *Compiler) Diff(oldPath, oldContent string, newPath string, rootPath str
 		return nil, fmt.Errorf("writing diff tex: %w", err)
 	}
 
-	return c.compile(diffTexPath, rootPath, engine, true)
+	res, err := c.compile(diffTexPath, rootPath, engine, true)
+	if err == nil && res != nil && res.Success {
+		diffPdfPath := filepath.Join(tempDir, "diff.pdf")
+		_ = OpenPDF(diffPdfPath)
+	}
+	return res, err
 }
 
 func (c *Compiler) compile(texPath string, rootPath string, engine string, isDiff bool) (*CompileResult, error) {
