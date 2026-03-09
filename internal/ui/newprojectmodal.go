@@ -23,7 +23,7 @@ type NewProjectModal struct {
 // NewNewProjectModal creates a new project modal.
 func NewNewProjectModal() NewProjectModal {
 	return NewProjectModal{
-		labels: [4]string{"Title", "Author", "Class", "Path"},
+		labels: [4]string{"Title", "Author", "Template", "Path"},
 		fields: [4]string{"", "", "article", "."},
 	}
 }
@@ -76,18 +76,18 @@ func (npm *NewProjectModal) HandleKey(key tea.KeyMsg) tea.Cmd {
 func (npm *NewProjectModal) submit() tea.Cmd {
 	title := npm.fields[0]
 	author := npm.fields[1]
-	docclass := npm.fields[2]
+	template := npm.fields[2]
 	path := npm.fields[3]
 
 	if title == "" {
 		title = "Untitled"
 	}
-	if docclass == "" {
-		docclass = "article"
+	if template == "" {
+		template = "article"
 	}
 
 	return func() tea.Msg {
-		err := core.CreateProject(path, title, author, docclass)
+		err := core.CreateProject(path, title, author, template)
 		if err != nil {
 			return ProjectCreatedMsg{Err: err}
 		}
@@ -107,7 +107,7 @@ func (npm NewProjectModal) View(termWidth, termHeight int) string {
 		return ""
 	}
 
-	modalW := 50
+	modalW := 60 // Increased width to accommodate template list
 	if modalW > termWidth-4 {
 		modalW = termWidth - 4
 	}
@@ -133,12 +133,19 @@ func (npm NewProjectModal) View(termWidth, termHeight int) string {
 		rows = append(rows, cursor+" "+labelStr+" "+fieldStr)
 	}
 
+	var templateHint string
+	if npm.cursor == 2 {
+		templates := core.GetAvailableTemplates()
+		templateHint = "\n  " + FileItemDim.Render("Available: "+strings.Join(templates, ", "))
+	}
+
 	hint := FileItemDim.Render("  Tab: next field │ Enter on Path: create │ Esc: cancel")
 
 	content := lipgloss.JoinVertical(lipgloss.Left,
 		title,
 		"",
 		strings.Join(rows, "\n"),
+		templateHint,
 		"",
 		hint,
 	)
