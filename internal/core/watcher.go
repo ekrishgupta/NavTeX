@@ -2,7 +2,9 @@ package core
 
 import (
 	"log"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -28,7 +30,22 @@ func NewWatcher(dir string) (*Watcher, error) {
 		return nil, err
 	}
 
-	err = w.Add(absDir)
+	err = filepath.WalkDir(absDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if path != absDir && strings.HasPrefix(d.Name(), ".") {
+				return filepath.SkipDir
+			}
+			watchErr := w.Add(path)
+			if watchErr != nil {
+				log.Printf("Failed to watch directory: %s - %v", path, watchErr)
+			}
+			return nil
+		}
+		return nil
+	})
 	if err != nil {
 		w.Close()
 		return nil, err
