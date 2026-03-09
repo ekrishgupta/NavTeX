@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -32,9 +33,12 @@ type Model struct {
 	errorModal      ErrorModal
 	newProjectModal NewProjectModal
 	helpModal       HelpModal
+	searchModal     SearchModal
+	diffModal       DiffModal
 
 	// Shared data
-	projectFiles *core.ProjectFiles
+	projectFiles     *core.ProjectFiles
+	globalBibEntries []core.BibEntry
 }
 
 // NewModel creates a new root model.
@@ -65,6 +69,7 @@ func NewModel(root, engine string) Model {
 		errorModal:      NewErrorModal(),
 		newProjectModal: NewNewProjectModal(),
 		helpModal:       NewHelpModal(),
+		searchModal:     NewSearchModal(),
 	}
 }
 
@@ -74,6 +79,7 @@ func (m Model) Init() tea.Cmd {
 		textinput.Blink,
 		m.scanDirCmd(m.rootPath),
 		m.listenForFileEventCmd(),
+		m.loadGlobalBibCmd(),
 	)
 }
 
@@ -115,6 +121,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if m.newProjectModal.IsVisible() {
 			cmd := m.newProjectModal.HandleKey(msg)
+			return m, cmd
+		}
+
+		if m.searchModal.IsVisible() {
+			cmd := m.searchModal.HandleKey(msg)
 			return m, cmd
 		}
 
@@ -164,6 +175,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "?":
 			m.helpModal.Show()
+
+		case "s":
+			if !m.filtering {
+				m.searchModal.Show(m.globalBibEntries)
+				return m, nil
+			}
 
 		case "F5":
 			if !m.compiler.IsBusy() {
@@ -265,6 +282,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Queue a rescan and immediately re-listen
 		cmds = append(cmds, m.scanDirCmd(m.rootPath), m.listenForFileEventCmd())
 
+	case GlobalBibLoadedMsg:
+		if msg.Err == nil {
+			m.globalBibEntries = msg.Entries
+		}
+
 	case ErrorMsg:
 		// General error handling
 	}
@@ -317,11 +339,32 @@ func (m Model) View() string {
 	if m.errorModal.IsVisible() {
 		return m.errorModal.View(m.width, m.height)
 	}
+	if m.searchModal.IsVisible() {
+		return m.searchModal.View(m.width, m.height)
+	}
 
 	return app
 }
 
+// GlobalBibLoadedMsg is emitted when the global bibliography is loaded.
+type GlobalBibLoadedMsg struct {
+	Entries []core.BibEntry
+	Err     error
+}
+
 // ── Commands ──
+
+func (m Model) loadGlobalBibCmd() tea.Cmd {
+	return func() tea.Msg {
+		config := core.LoadGlobalConfig()
+		if config.GlobalBibPath == "" {
+			return GlobalBibLoadedMsg{Err: fmt.Errorf("no global bib path defined")}
+		}
+
+		entries, err := core.BibMetadata(config.GlobalBibPath)
+		return GlobalBibLoadedMsg{Entries: entries, Err: err}
+	}
+}
 
 func (m *Model) updateLayout() {
 	footerHeight := 1

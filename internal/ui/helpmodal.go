@@ -55,6 +55,7 @@ func (hm HelpModal) View(termWidth, termHeight int) string {
 		{"F7", "Open compiled PDF"},
 		{"n", "New project wizard"},
 		{"y", "Yank cite key to clipboard"},
+		{"s", "Search global bibliography"},
 		{"/", "Search files"},
 		{"Enter", "Open editor / Jump to line"},
 		{"?", "Toggle this help"},
