@@ -21,11 +21,12 @@ type Inspector struct {
 	selectedBibIdx int
 
 	// Cached metadata
-	texMeta   *core.TexMeta
-	bibMeta   []core.BibEntry
-	imageMeta *core.ImageMeta
-	fileSize  int64
-	err       error
+	texMeta      *core.TexMeta
+	bibMeta      []core.BibEntry
+	imageMeta    *core.ImageMeta
+	fileSize     int64
+	err          error
+	needsRefresh bool
 }
 
 // NewInspector creates a new inspector.
@@ -44,14 +45,20 @@ func (ins *Inspector) SetFocused(f bool) {
 	ins.focused = f
 }
 
+// Refresh marks the inspector as needing a metadata reload.
+func (ins *Inspector) Refresh() {
+	ins.needsRefresh = true
+}
+
 // SetFile updates the inspector to show metadata for the given file.
 func (ins *Inspector) SetFile(path string, cat core.FileCategory) {
-	if path == ins.path {
+	if path == ins.path && !ins.needsRefresh {
 		return // No change
 	}
 
 	ins.path = path
 	ins.category = cat
+	ins.needsRefresh = false
 	ins.texMeta = nil
 	ins.bibMeta = nil
 	ins.imageMeta = nil
