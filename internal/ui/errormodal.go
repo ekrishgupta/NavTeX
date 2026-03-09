@@ -16,6 +16,11 @@ type ErrorModal struct {
 	height  int
 	scroll  int
 	cursor  int
+	modalW  int
+	modalH  int
+
+	// Cache
+	headerStr string
 }
 
 // NewErrorModal creates a new error modal.
@@ -87,16 +92,21 @@ func (em ErrorModal) View(termWidth, termHeight int) string {
 	errors := core.ErrorCount(em.entries)
 	warnings := core.WarningCount(em.entries)
 
-	title := ModalTitle.Render(fmt.Sprintf("Build Log — %d errors, %d warnings", errors, warnings))
+	if modalW != em.modalW || modalH != em.modalH {
+		em.modalW = modalW
+		em.modalH = modalH
 
-	// Header row
+		lineCol := 6
+		sevCol := 8
+		header := fmt.Sprintf("  %-*s %-*s %s", lineCol, "Line", sevCol, "Severity", "Message")
+		em.headerStr = BibTableHeader.Render(header) + "\n" + FileItemDim.Render("  "+strings.Repeat("─", modalW-8))
+	}
+
 	lineCol := 6
 	sevCol := 8
 	msgCol := modalW - lineCol - sevCol - 12
 
-	header := fmt.Sprintf("  %-*s %-*s %s", lineCol, "Line", sevCol, "Severity", "Message")
-	headerLine := BibTableHeader.Render(header)
-	separator := FileItemDim.Render("  " + strings.Repeat("─", modalW-8))
+	title := ModalTitle.Render(fmt.Sprintf("Build Log — %d errors, %d warnings", errors, warnings))
 
 	var rows []string
 
@@ -142,8 +152,7 @@ func (em ErrorModal) View(termWidth, termHeight int) string {
 	content := lipgloss.JoinVertical(lipgloss.Left,
 		title,
 		"",
-		headerLine,
-		separator,
+		em.headerStr,
 		strings.Join(rows, "\n"),
 		"",
 		FileItemDim.Render("  Enter: jump to line │ Esc: close │ ↑/↓: move"),
