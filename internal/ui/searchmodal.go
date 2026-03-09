@@ -18,6 +18,9 @@ type SearchModal struct {
 	results []core.BibEntry
 	index   int
 	status  string
+
+	// Optimization: pre-calculated searchable strings
+	searchCache []string
 }
 
 // NewSearchModal creates a new search modal.
@@ -42,6 +45,12 @@ func (sm *SearchModal) Show(entries []core.BibEntry) {
 	sm.index = 0
 	sm.input.Reset()
 	sm.input.Focus()
+
+	// Pre-calculate searchable strings for speed
+	sm.searchCache = make([]string, len(entries))
+	for i, e := range entries {
+		sm.searchCache[i] = strings.ToLower(e.Key + " " + e.Title + " " + e.Authors)
+	}
 }
 
 // Hide closes the search modal.
@@ -97,12 +106,10 @@ func (sm *SearchModal) filterEntries() {
 	if query == "" {
 		sm.results = sm.entries
 	} else {
-		var filtered []core.BibEntry
-		for _, e := range sm.entries {
-			if strings.Contains(strings.ToLower(e.Key), query) ||
-				strings.Contains(strings.ToLower(e.Title), query) ||
-				strings.Contains(strings.ToLower(e.Authors), query) {
-				filtered = append(filtered, e)
+		filtered := make([]core.BibEntry, 0, len(sm.entries))
+		for i, cached := range sm.searchCache {
+			if strings.Contains(cached, query) {
+				filtered = append(filtered, sm.entries[i])
 			}
 		}
 		sm.results = filtered
