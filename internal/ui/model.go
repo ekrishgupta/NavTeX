@@ -3,6 +3,8 @@ package ui
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -145,8 +147,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.browser.SetFilter(m.filterInput.Value())
 
 			// Also update inspector to match new browser selection
-			path, cat := m.browser.SelectedFile()
-			m.inspector.SetFile(path, cat)
+			cmd2 := m.updateInspector()
+			if cmd2 != nil {
+				cmds = append(cmds, cmd2)
+			}
 
 			return m, cmd
 		}
@@ -231,8 +235,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "up", "k":
 			if m.focused == 0 {
 				m.browser.MoveUp()
-				path, cat := m.browser.SelectedFile()
-				m.inspector.SetFile(path, cat)
+				cmd2 := m.updateInspector()
+				if cmd2 != nil {
+					cmds = append(cmds, cmd2)
+				}
 			} else {
 				m.inspector.MoveBibUp()
 			}
@@ -240,8 +246,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "down", "j":
 			if m.focused == 0 {
 				m.browser.MoveDown()
-				path, cat := m.browser.SelectedFile()
-				m.inspector.SetFile(path, cat)
+				cmd2 := m.updateInspector()
+				if cmd2 != nil {
+					cmds = append(cmds, cmd2)
+				}
 			} else {
 				m.inspector.MoveBibDown()
 			}
@@ -259,8 +267,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.projectFiles = msg.Files
 		m.browser.SetFiles(msg.Files)
 		m.actionBar.SetProjectRoot(msg.Files.Root)
-		path, cat := m.browser.SelectedFile()
-		m.inspector.SetFile(path, cat)
+		cmd2 := m.updateInspector()
+		if cmd2 != nil {
+			cmds = append(cmds, cmd2)
+		}
 
 	case RunDiffMsg:
 		m.actionBar.SetBuildStatus(StatusBUILDING, 0, 0)
@@ -319,6 +329,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case ErrorMsg:
 		// General error handling
+
+	case TexCountFinishedMsg:
+		if msg.Err == nil && m.inspector.path == msg.Path && m.inspector.texMeta != nil {
+			m.inspector.texMeta.WordCount = msg.Total
+			m.inspector.texMeta.WordsInText = msg.InText
+			m.inspector.texMeta.WordsInHeaders = msg.InHeaders
+			m.inspector.texMeta.WordsInCaptions = msg.InCaptions
+		}
 	}
 
 	if m.filtering {
@@ -426,4 +444,16 @@ func (m *Model) updateLayout() {
 	m.browser.SetSize(browserWidth, mainHeight)
 	m.inspector.SetSize(inspectorWidth, mainHeight)
 	m.actionBar.SetWidth(m.width)
+}
+
+func (m *Model) updateInspector() tea.Cmd {
+	path, cat := m.browser.SelectedFile()
+	if path == m.inspector.path {
+		return nil
+	}
+	m.inspector.SetFile(path, cat)
+	if cat == core.CategorySource && strings.ToLower(filepath.Ext(path)) == ".tex" {
+		return m.runTexCountCmd(path)
+	}
+	return nil
 }
