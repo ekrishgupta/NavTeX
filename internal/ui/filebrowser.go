@@ -121,7 +121,7 @@ func (fb *FileBrowser) ShowingShadow() bool {
 
 // rebuildItems reconstructs the flat list of display items.
 func (fb *FileBrowser) rebuildItems() {
-	fb.items = nil
+	fb.items = fb.items[:0]
 
 	if fb.files == nil {
 		return
@@ -139,7 +139,7 @@ func (fb *FileBrowser) rebuildItems() {
 
 	// Source files
 	if len(fb.files.Source) > 0 {
-		var filtered []browserItem
+		filtered := make([]browserItem, 0, len(fb.files.Source))
 		for _, f := range fb.files.Source {
 			if matchFilter(f.Name) {
 				filtered = append(filtered, browserItem{
@@ -160,7 +160,7 @@ func (fb *FileBrowser) rebuildItems() {
 
 	// Data files
 	if len(fb.files.Data) > 0 {
-		var filtered []browserItem
+		filtered := make([]browserItem, 0, len(fb.files.Data))
 		for _, f := range fb.files.Data {
 			if matchFilter(f.Name) {
 				filtered = append(filtered, browserItem{
@@ -181,7 +181,7 @@ func (fb *FileBrowser) rebuildItems() {
 
 	// Assets
 	if len(fb.files.Assets) > 0 {
-		var filtered []browserItem
+		filtered := make([]browserItem, 0, len(fb.files.Assets))
 		for _, f := range fb.files.Assets {
 			rel, _ := filepath.Rel(fb.files.Root, f.Path)
 			if matchFilter(rel) {
@@ -203,7 +203,7 @@ func (fb *FileBrowser) rebuildItems() {
 
 	// Output
 	if len(fb.files.Output) > 0 {
-		var filtered []browserItem
+		filtered := make([]browserItem, 0, len(fb.files.Output))
 		for _, f := range fb.files.Output {
 			if matchFilter(f.Name) {
 				filtered = append(filtered, browserItem{
@@ -224,7 +224,7 @@ func (fb *FileBrowser) rebuildItems() {
 
 	// Shadow Bin (auxiliary)
 	if len(fb.files.Auxiliary) > 0 {
-		var filtered []browserItem
+		filtered := make([]browserItem, 0, len(fb.files.Auxiliary))
 		if fb.showShadow {
 			for _, f := range fb.files.Auxiliary {
 				if matchFilter(f.Name) {
