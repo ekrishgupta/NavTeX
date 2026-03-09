@@ -6,7 +6,7 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/ekrishgupta/navtex/internal/core"
+	"github.com/ekrishgupta/navtex/internal/latex"
 	"github.com/ekrishgupta/navtex/internal/ui"
 )
 
@@ -40,7 +40,7 @@ func main() {
 	}
 
 	// Load configuration from .navtex.yaml if present
-	config := core.LoadConfig(path)
+	config := latex.LoadConfig(path)
 
 	// CLI overrides config
 	finalEngine := config.Engine

@@ -5,12 +5,12 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/ekrishgupta/navtex/internal/core"
+	"github.com/ekrishgupta/navtex/internal/latex"
 )
 
 // ErrorModal displays parsed build errors.
 type ErrorModal struct {
-	entries []core.LogEntry
+	entries []latex.LogEntry
 	visible bool
 	width   int
 	height  int
@@ -29,7 +29,7 @@ func NewErrorModal() ErrorModal {
 }
 
 // Show displays the modal with the given log entries.
-func (em *ErrorModal) Show(entries []core.LogEntry) {
+func (em *ErrorModal) Show(entries []latex.LogEntry) {
 	em.entries = entries
 	em.visible = true
 	em.scroll = 0
@@ -67,7 +67,7 @@ func (em *ErrorModal) MoveDown() {
 }
 
 // SelectedEntry returns the currently selected log entry.
-func (em *ErrorModal) SelectedEntry() *core.LogEntry {
+func (em *ErrorModal) SelectedEntry() *latex.LogEntry {
 	if em.cursor >= 0 && em.cursor < len(em.entries) {
 		return &em.entries[em.cursor]
 	}
@@ -89,8 +89,8 @@ func (em ErrorModal) View(termWidth, termHeight int) string {
 		modalH = 10
 	}
 
-	errors := core.ErrorCount(em.entries)
-	warnings := core.WarningCount(em.entries)
+	errors := latex.ErrorCount(em.entries)
+	warnings := latex.WarningCount(em.entries)
 
 	if modalW != em.modalW || modalH != em.modalH {
 		em.modalW = modalW

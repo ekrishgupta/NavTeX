@@ -3,14 +3,14 @@ package ui
 import (
 	"testing"
 
-	"github.com/ekrishgupta/navtex/internal/core"
+	"github.com/ekrishgupta/navtex/internal/latex"
 )
 
 func TestFileBrowser_Filtering(t *testing.T) {
 	fb := NewFileBrowser()
 
-	files := &core.ProjectFiles{
-		Source: []core.FileEntry{
+	files := &latex.ProjectFiles{
+		Source: []latex.FileEntry{
 			{Name: "main.tex", Path: "main.tex"},
 			{Name: "chapter1.tex", Path: "chapter1.tex"},
 		},

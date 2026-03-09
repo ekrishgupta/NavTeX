@@ -10,6 +10,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ekrishgupta/navtex/internal/core"
+	"github.com/ekrishgupta/navtex/internal/latex"
+	"github.com/ekrishgupta/navtex/internal/system"
 )
 
 // Model represents the root application state.
@@ -32,9 +34,9 @@ type Model struct {
 	browser     FileBrowser
 	inspector   Inspector
 	actionBar   ActionBar
-	compiler    *core.Compiler
+	compiler    *latex.Compiler
 	filterInput textinput.Model
-	watcher     *core.Watcher
+	watcher     *system.Watcher
 
 	// Modals
 	errorModal      ErrorModal
@@ -44,8 +46,8 @@ type Model struct {
 	diffModal       DiffModal
 
 	// Shared data
-	projectFiles     *core.ProjectFiles
-	globalBibEntries []core.BibEntry
+	projectFiles     *latex.ProjectFiles
+	globalBibEntries []latex.BibEntry
 }
 
 // NewModel creates a new root model.
@@ -70,7 +72,7 @@ func NewModel(root, engine string) Model {
 		browser:         NewFileBrowser(),
 		inspector:       NewInspector(),
 		actionBar:       NewActionBar(),
-		compiler:        core.NewCompiler(),
+		compiler:        latex.NewCompiler(),
 		filterInput:     ti,
 		watcher:         w,
 		errorModal:      NewErrorModal(),
@@ -188,7 +190,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "d":
 			path, cat := m.browser.SelectedFile()
-			if cat == core.CategorySource && path != "" {
+			if cat == latex.CategorySource && path != "" {
 				// Prepare list of files and tags
 				var allTex []string
 				if m.projectFiles != nil {
@@ -212,7 +214,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "F5":
 			if !m.compiler.IsBusy() {
 				path, cat := m.browser.SelectedFile()
-				if cat == core.CategorySource && path != "" {
+				if cat == latex.CategorySource && path != "" {
 					m.actionBar.SetBuildStatus(StatusBUILDING, 0, 0)
 					cmds = append(cmds, m.compileCmd(path))
 				}
@@ -234,7 +236,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.focused == 0 {
 				path, cat := m.browser.SelectedFile()
-				if path != "" && cat != core.CategoryOutput && cat != core.CategoryAssets {
+				if path != "" && cat != latex.CategoryOutput && cat != latex.CategoryAssets {
 					// Open in editor (only source, data, aux)
 					return m, m.openEditorCmd(path, 0)
 				}
@@ -303,8 +305,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case LogParsedMsg:
 		if msg.Err == nil && len(msg.Entries) > 0 {
-			m.actionBar.SetBuildStatus(StatusFAILED, 0, core.ErrorCount(msg.Entries))
-			if core.ErrorCount(msg.Entries) > 0 {
+			m.actionBar.SetBuildStatus(StatusFAILED, 0, latex.ErrorCount(msg.Entries))
+			if latex.ErrorCount(msg.Entries) > 0 {
 				m.errorModal.Show(msg.Entries)
 			}
 		}
@@ -408,7 +410,7 @@ func (m Model) View() string {
 
 // GlobalBibLoadedMsg is emitted when the global bibliography is loaded.
 type GlobalBibLoadedMsg struct {
-	Entries []core.BibEntry
+	Entries []latex.BibEntry
 	Err     error
 }
 
@@ -416,19 +418,19 @@ type GlobalBibLoadedMsg struct {
 
 func (m Model) loadGlobalBibCmd() tea.Cmd {
 	return func() tea.Msg {
-		config := core.LoadGlobalConfig()
+		config := latex.LoadGlobalConfig()
 		if config.GlobalBibPath == "" {
 			return GlobalBibLoadedMsg{Err: fmt.Errorf("no global bib path defined")}
 		}
 
-		entries, err := core.BibMetadata(config.GlobalBibPath)
+		entries, err := latex.BibMetadata(config.GlobalBibPath)
 		return GlobalBibLoadedMsg{Entries: entries, Err: err}
 	}
 }
 
 func (m Model) listTagsCmd(selectedPath string, allFiles []string) tea.Cmd {
 	return func() tea.Msg {
-		tags, _ := core.ListGitTags() // ignore error, just show empty if not git
+		tags, _ := latex.ListGitTags() // ignore error, just show empty if not git
 		return TagsListedMsg{
 			SelectedPath: selectedPath,
 			Tags:         tags,
@@ -454,7 +456,7 @@ func (m *Model) updateLayout() {
 func (m *Model) updateInspector() tea.Cmd {
 	path, cat := m.browser.SelectedFile()
 	m.inspector.SetFile(path, cat)
-	if cat == core.CategorySource && strings.ToLower(filepath.Ext(path)) == ".tex" {
+	if cat == latex.CategorySource && strings.ToLower(filepath.Ext(path)) == ".tex" {
 		return m.runTexCountCmd(path)
 	}
 	return nil

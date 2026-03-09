@@ -1,5 +1,5 @@
 // Package core contains the platform-independent logic for NavTex.
-package core
+package latex
 
 import (
 	"os"

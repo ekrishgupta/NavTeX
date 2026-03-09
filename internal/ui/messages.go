@@ -1,23 +1,25 @@
 package ui
 
 import (
-	"github.com/ekrishgupta/navtex/internal/core"
+	"github.com/ekrishgupta/navtex/internal/latex"
 )
 
 // ── Messages ──
 
 // ScannedMsg is sent when a directory scan completes.
-type ScannedMsg struct{ Files *core.ProjectFiles }
+type ScannedMsg struct {
+	Files *latex.ProjectFiles
+}
 
 // BuildFinishedMsg is sent when a LaTeX build completes.
 type BuildFinishedMsg struct {
-	Result *core.CompileResult
+	Result *latex.CompileResult
 	Err    error
 }
 
 // LogParsedMsg is sent when a .log file has been parsed.
 type LogParsedMsg struct {
-	Entries []core.LogEntry
+	Entries []latex.LogEntry
 	Err     error
 }
 

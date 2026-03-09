@@ -4,14 +4,15 @@ import (
 	"os/exec"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/ekrishgupta/navtex/internal/core"
+	"github.com/ekrishgupta/navtex/internal/latex"
+	"github.com/ekrishgupta/navtex/internal/system"
 )
 
 // ── Commands ──
 
 func (m Model) scanDirCmd(root string) tea.Cmd {
 	return func() tea.Msg {
-		pf, err := core.ScanDirectory(root)
+		pf, err := latex.ScanDirectory(root)
 		if err != nil {
 			return ErrorMsg{Err: err}
 		}
@@ -28,14 +29,14 @@ func (m Model) compileCmd(path string) tea.Cmd {
 
 func (m Model) parseLogCmd(path string) tea.Cmd {
 	return func() tea.Msg {
-		entries, err := core.ParseLog(path)
+		entries, err := latex.ParseLog(path)
 		return LogParsedMsg{Entries: entries, Err: err}
 	}
 }
 
 func (m Model) cleanCmd() tea.Cmd {
 	return func() tea.Msg {
-		removed, err := core.Purge(m.rootPath)
+		removed, err := latex.Purge(m.rootPath)
 		return CleanedMsg{Files: removed, Err: err}
 	}
 }
@@ -46,13 +47,13 @@ func (m Model) openPdfCmd() tea.Cmd {
 			return nil
 		}
 		// Open the first output PDF
-		core.OpenPDF(m.projectFiles.Output[0].Path)
+		latex.OpenPDF(m.projectFiles.Output[0].Path)
 		return nil
 	}
 }
 
 func (m Model) openEditorCmd(path string, lineNum int) tea.Cmd {
-	c, err := core.EditorCmd(path, lineNum)
+	c, err := system.EditorCmd(path, lineNum)
 	if err != nil {
 		return func() tea.Msg { return ErrorMsg{Err: err} }
 	}
@@ -80,7 +81,7 @@ func (m Model) runTexCountCmd(path string) tea.Cmd {
 		if _, err := exec.LookPath("texcount"); err != nil {
 			return TexCountFinishedMsg{Path: path, Err: err}
 		}
-		total, inText, inHeaders, inCaptions, err := core.RunTexCount(path)
+		total, inText, inHeaders, inCaptions, err := latex.RunTexCount(path)
 		return TexCountFinishedMsg{
 			Path:       path,
 			Total:      total,

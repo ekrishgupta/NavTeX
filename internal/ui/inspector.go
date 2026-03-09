@@ -6,13 +6,13 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/ekrishgupta/navtex/internal/core"
+	"github.com/ekrishgupta/navtex/internal/latex"
 )
 
 // Inspector is the right-pane metadata viewer.
 type Inspector struct {
 	path     string
-	category core.FileCategory
+	category latex.FileCategory
 	width    int
 	height   int
 	focused  bool
@@ -21,9 +21,9 @@ type Inspector struct {
 	selectedBibIdx int
 
 	// Cached metadata
-	texMeta      *core.TexMeta
-	bibMeta      []core.BibEntry
-	imageMeta    *core.ImageMeta
+	texMeta      *latex.TexMeta
+	bibMeta      []latex.BibEntry
+	imageMeta    *latex.ImageMeta
 	fileSize     int64
 	err          error
 	needsRefresh bool
@@ -51,7 +51,7 @@ func (ins *Inspector) Refresh() {
 }
 
 // SetFile updates the inspector to show metadata for the given file.
-func (ins *Inspector) SetFile(path string, cat core.FileCategory) {
+func (ins *Inspector) SetFile(path string, cat latex.FileCategory) {
 	if path == ins.path && !ins.needsRefresh {
 		return // No change
 	}
@@ -68,32 +68,20 @@ func (ins *Inspector) SetFile(path string, cat core.FileCategory) {
 		return
 	}
 
-	ext := strings.ToLower(filepath.Ext(path))
+	// ext := strings.ToLower(filepath.Ext(path)) // No longer needed for category-based switch
 
-	switch {
-	case ext == ".tex":
-		meta, err := core.TexMetadata(path)
-		if err != nil {
-			ins.err = err
-		} else {
-			ins.texMeta = meta
+	switch ins.category {
+	case latex.CategorySource:
+		ins.texMeta, ins.err = latex.TexMetadata(path)
+
+	case latex.CategoryData:
+		// Check extension to decide if it's bib
+		if strings.HasSuffix(strings.ToLower(path), ".bib") {
+			ins.bibMeta, ins.err = latex.BibMetadata(path)
 		}
 
-	case ext == ".bib":
-		entries, err := core.BibMetadata(path)
-		if err != nil {
-			ins.err = err
-		} else {
-			ins.bibMeta = entries
-		}
-
-	case ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif":
-		meta, err := core.ImageMetadata(path)
-		if err != nil {
-			ins.err = err
-		} else {
-			ins.imageMeta = meta
-		}
+	case latex.CategoryAssets:
+		ins.imageMeta, ins.err = latex.ImageMetadata(path)
 
 	default:
 		// For other files, just show basic info
@@ -147,13 +135,17 @@ func (ins Inspector) View() string {
 			ErrorText.Render("Error: "+ins.err.Error()),
 		)
 	} else {
-		ext := strings.ToLower(filepath.Ext(ins.path))
-		switch {
-		case ext == ".tex" && ins.texMeta != nil:
+		// ext := strings.ToLower(filepath.Ext(ins.path)) // No longer needed for category-based switch
+		switch ins.category {
+		case latex.CategorySource:
 			content = ins.renderTexMeta()
-		case ext == ".bib" && ins.bibMeta != nil:
-			content = ins.renderBibMeta()
-		case (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif") && ins.imageMeta != nil:
+		case latex.CategoryData:
+			if ins.bibMeta != nil {
+				content = ins.renderBibMeta()
+			} else {
+				content = ins.renderGeneric()
+			}
+		case latex.CategoryAssets:
 			content = ins.renderImageMeta()
 		default:
 			content = ins.renderGeneric()
@@ -291,7 +283,7 @@ func (ins Inspector) renderImageMeta() string {
 		lines = append(lines, MetaLabel.Render("Dimensions")+" "+MetaValue.Render(fmt.Sprintf("%d × %d px", m.Width, m.Height)))
 	}
 
-	lines = append(lines, MetaLabel.Render("File Size")+" "+MetaValue.Render(core.FormatSize(m.Size)))
+	lines = append(lines, MetaLabel.Render("File Size")+" "+MetaValue.Render(latex.FormatSize(m.Size)))
 
 	return strings.Join(lines, "\n")
 }
@@ -309,17 +301,17 @@ func (ins Inspector) renderGeneric() string {
 	}, "\n")
 }
 
-func categoryName(c core.FileCategory) string {
+func categoryName(c latex.FileCategory) string {
 	switch c {
-	case core.CategorySource:
+	case latex.CategorySource:
 		return "Source"
-	case core.CategoryData:
-		return "Data"
-	case core.CategoryAssets:
+	case latex.CategoryData:
+		return "Data/Bib"
+	case latex.CategoryAssets:
 		return "Asset"
-	case core.CategoryAuxiliary:
+	case latex.CategoryAuxiliary:
 		return "Auxiliary"
-	case core.CategoryOutput:
+	case latex.CategoryOutput:
 		return "Output"
 	default:
 		return "Unknown"

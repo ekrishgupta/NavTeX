@@ -7,17 +7,18 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ekrishgupta/navtex/internal/core"
+	"github.com/ekrishgupta/navtex/internal/latex"
 )
 
 // FileSelectedMsg is emitted when the cursor moves to a new file.
 type FileSelectedMsg struct {
 	Path     string
-	Category core.FileCategory
+	Category latex.FileCategory
 }
 
 // FileBrowser is the left-pane file browser widget.
 type FileBrowser struct {
-	files      *core.ProjectFiles
+	files      *latex.ProjectFiles
 	items      []browserItem
 	cursor     int
 	width      int
@@ -30,7 +31,7 @@ type FileBrowser struct {
 type browserItem struct {
 	display  string
 	path     string
-	category core.FileCategory
+	category latex.FileCategory
 	isHeader bool
 }
 
@@ -52,8 +53,8 @@ func (fb *FileBrowser) SetFilter(f string) {
 }
 
 // SetFiles populates the browser with scanned project files.
-func (fb *FileBrowser) SetFiles(pf *core.ProjectFiles) {
-	fb.files = pf
+func (fb *FileBrowser) SetFiles(f *latex.ProjectFiles) {
+	fb.files = f
 	fb.rebuildItems()
 	if fb.cursor >= len(fb.items) {
 		fb.cursor = 0
@@ -74,14 +75,12 @@ func (fb *FileBrowser) SetFocused(f bool) {
 }
 
 // SelectedFile returns the currently selected file path and its category.
-func (fb *FileBrowser) SelectedFile() (string, core.FileCategory) {
-	if fb.cursor >= 0 && fb.cursor < len(fb.items) {
-		item := fb.items[fb.cursor]
-		if !item.isHeader {
-			return item.path, item.category
-		}
+func (fb *FileBrowser) SelectedFile() (string, latex.FileCategory) {
+	if len(fb.items) == 0 {
+		return "", 0
 	}
-	return "", core.CategorySource
+	item := fb.items[fb.cursor]
+	return item.path, item.category
 }
 
 // MoveUp moves cursor up.
@@ -145,7 +144,7 @@ func (fb *FileBrowser) rebuildItems() {
 				filtered = append(filtered, browserItem{
 					display:  f.Name,
 					path:     f.Path,
-					category: core.CategorySource,
+					category: latex.CategorySource,
 				})
 			}
 		}
@@ -158,15 +157,15 @@ func (fb *FileBrowser) rebuildItems() {
 		}
 	}
 
-	// Data files
-	if len(fb.files.Data) > 0 {
-		filtered := make([]browserItem, 0, len(fb.files.Data))
+	// Data (includes .bib)
+	{
+		var filtered []browserItem
 		for _, f := range fb.files.Data {
 			if matchFilter(f.Name) {
 				filtered = append(filtered, browserItem{
 					display:  f.Name,
 					path:     f.Path,
-					category: core.CategoryData,
+					category: latex.CategoryData,
 				})
 			}
 		}
@@ -180,15 +179,15 @@ func (fb *FileBrowser) rebuildItems() {
 	}
 
 	// Assets
-	if len(fb.files.Assets) > 0 {
-		filtered := make([]browserItem, 0, len(fb.files.Assets))
+	{
+		var filtered []browserItem
 		for _, f := range fb.files.Assets {
 			rel, _ := filepath.Rel(fb.files.Root, f.Path)
 			if matchFilter(rel) {
 				filtered = append(filtered, browserItem{
 					display:  rel,
 					path:     f.Path,
-					category: core.CategoryAssets,
+					category: latex.CategoryAssets,
 				})
 			}
 		}
@@ -209,7 +208,7 @@ func (fb *FileBrowser) rebuildItems() {
 				filtered = append(filtered, browserItem{
 					display:  f.Name,
 					path:     f.Path,
-					category: core.CategoryOutput,
+					category: latex.CategoryOutput,
 				})
 			}
 		}
@@ -231,7 +230,7 @@ func (fb *FileBrowser) rebuildItems() {
 					filtered = append(filtered, browserItem{
 						display:  f.Name,
 						path:     f.Path,
-						category: core.CategoryAuxiliary,
+						category: latex.CategoryAuxiliary,
 					})
 				}
 			}

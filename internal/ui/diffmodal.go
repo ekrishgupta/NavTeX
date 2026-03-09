@@ -5,7 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/ekrishgupta/navtex/internal/core"
+	"github.com/ekrishgupta/navtex/internal/latex"
 )
 
 type DiffTargetType int
@@ -132,7 +132,7 @@ func (dm *DiffModal) selectCurrent() tea.Cmd {
 		case TargetLastCommit:
 			dm.Hide()
 			return func() tea.Msg {
-				content, err := core.GetGitLastCommitContent(dm.selectedTex)
+				content, err := latex.GetGitLastCommitContent(dm.selectedTex)
 				if err != nil {
 					return ErrorMsg{Err: err}
 				}
@@ -156,7 +156,7 @@ func (dm *DiffModal) selectCurrent() tea.Cmd {
 		tag := dm.tags[dm.cursor]
 		dm.Hide()
 		return func() tea.Msg {
-			content, err := core.GetGitVersionContent(dm.selectedTex, tag)
+			content, err := latex.GetGitVersionContent(dm.selectedTex, tag)
 			if err != nil {
 				return ErrorMsg{Err: err}
 			}
@@ -168,7 +168,7 @@ func (dm *DiffModal) selectCurrent() tea.Cmd {
 		dm.Hide()
 		return func() tea.Msg {
 			// Read other file content
-			content, err := core.GetGitVersionContent(otherFile, "HEAD") // Fallback to current if not in git
+			content, err := latex.GetGitVersionContent(otherFile, "HEAD") // Fallback to current if not in git
 			if err != nil {
 				// Try reading from disk if git fails
 				// But latexdiff can take a file path directly?

@@ -5,7 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/ekrishgupta/navtex/internal/core"
+	"github.com/ekrishgupta/navtex/internal/latex"
 )
 
 // NewProjectModal is a form for scaffolding a new LaTeX project.
@@ -75,7 +75,7 @@ func (npm *NewProjectModal) HandleKey(key tea.KeyMsg) tea.Cmd {
 // submit creates the project and returns a command.
 func (npm *NewProjectModal) submit() tea.Cmd {
 	title := npm.fields[0]
-	author := npm.fields[1]
+	// author := npm.fields[1]
 	template := npm.fields[2]
 	path := npm.fields[3]
 
@@ -87,7 +87,7 @@ func (npm *NewProjectModal) submit() tea.Cmd {
 	}
 
 	return func() tea.Msg {
-		err := core.CreateProject(path, title, author, template)
+		err := latex.CreateProject(path, title, "", template)
 		if err != nil {
 			return ProjectCreatedMsg{Err: err}
 		}
@@ -101,7 +101,7 @@ func (npm NewProjectModal) View(termWidth, termHeight int) string {
 		return ""
 	}
 
-	modalW := 60 // Increased width to accommodate template list
+	modalW := 60
 	if modalW > termWidth-4 {
 		modalW = termWidth - 4
 	}
@@ -129,7 +129,7 @@ func (npm NewProjectModal) View(termWidth, termHeight int) string {
 
 	var templateHint string
 	if npm.cursor == 2 {
-		templates := core.GetAvailableTemplates()
+		templates := latex.GetAvailableTemplates()
 		templateHint = "\n  " + FileItemDim.Render("Available: "+strings.Join(templates, ", "))
 	}
 

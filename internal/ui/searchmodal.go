@@ -8,14 +8,15 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ekrishgupta/navtex/internal/core"
+	"github.com/ekrishgupta/navtex/internal/latex"
 )
 
 // SearchModal allows fuzzy searching through the global bibliography.
 type SearchModal struct {
 	visible bool
 	input   textinput.Model
-	entries []core.BibEntry
-	results []core.BibEntry
+	entries []latex.BibEntry
+	results []latex.BibEntry
 	index   int
 	status  string
 
@@ -38,7 +39,7 @@ func NewSearchModal() SearchModal {
 }
 
 // Show opens the search modal and triggers a bib load.
-func (sm *SearchModal) Show(entries []core.BibEntry) {
+func (sm *SearchModal) Show(entries []latex.BibEntry) {
 	sm.visible = true
 	sm.entries = entries
 	sm.results = entries

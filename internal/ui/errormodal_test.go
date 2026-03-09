@@ -3,13 +3,13 @@ package ui
 import (
 	"testing"
 
-	"github.com/ekrishgupta/navtex/internal/core"
+	"github.com/ekrishgupta/navtex/internal/latex"
 )
 
 func TestErrorModal_Navigation(t *testing.T) {
 	em := NewErrorModal()
 
-	entries := []core.LogEntry{
+	entries := []latex.LogEntry{
 		{Severity: "error", Line: 10, Message: "Error 1"},
 		{Severity: "warning", Line: 15, Message: "Warning 1"},
 		{Severity: "error", Line: 20, Message: "Error 2"},
