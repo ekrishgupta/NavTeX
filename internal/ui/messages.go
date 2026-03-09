@@ -39,3 +39,16 @@ type EditorClosedMsg struct {
 type FileEventMsg struct {
 	Name string
 }
+
+// TagsListedMsg is sent when Git tags are fetched.
+type TagsListedMsg struct {
+	SelectedPath string
+	Tags         []string
+	AllFiles     []string
+}
+
+// ProjectCreatedMsg is sent when a new project is created.
+type ProjectCreatedMsg struct {
+	Path string
+	Err  error
+}
