@@ -52,3 +52,13 @@ type ProjectCreatedMsg struct {
 	Path string
 	Err  error
 }
+
+// TexCountFinishedMsg is sent when an async texcount completes.
+type TexCountFinishedMsg struct {
+	Path       string
+	Total      int
+	InText     int
+	InHeaders  int
+	InCaptions int
+	Err        error
+}
