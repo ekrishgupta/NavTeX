@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"os/exec"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ekrishgupta/navtex/internal/core"
 )
@@ -70,5 +72,22 @@ func (m Model) listenForFileEventCmd() tea.Cmd {
 			return nil // watcher closed
 		}
 		return FileEventMsg{Name: event}
+	}
+}
+
+func (m Model) runTexCountCmd(path string) tea.Cmd {
+	return func() tea.Msg {
+		if _, err := exec.LookPath("texcount"); err != nil {
+			return TexCountFinishedMsg{Path: path, Err: err}
+		}
+		total, inText, inHeaders, inCaptions, err := core.RunTexCount(path)
+		return TexCountFinishedMsg{
+			Path:       path,
+			Total:      total,
+			InText:     inText,
+			InHeaders:  inHeaders,
+			InCaptions: inCaptions,
+			Err:        err,
+		}
 	}
 }
