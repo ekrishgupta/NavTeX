@@ -453,9 +453,6 @@ func (m *Model) updateLayout() {
 
 func (m *Model) updateInspector() tea.Cmd {
 	path, cat := m.browser.SelectedFile()
-	if path == m.inspector.path {
-		return nil
-	}
 	m.inspector.SetFile(path, cat)
 	if cat == core.CategorySource && strings.ToLower(filepath.Ext(path)) == ".tex" {
 		return m.runTexCountCmd(path)
