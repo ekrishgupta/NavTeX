@@ -107,27 +107,14 @@ func TexMetadata(path string) (*TexMeta, error) {
 		meta.Author = strings.TrimSpace(m[1])
 	}
 
-	// Try to get precise word count using texcount
-	if _, err := exec.LookPath("texcount"); err == nil {
-		total, inText, inHeaders, inCaptions, err := runTexCount(path)
-		if err == nil {
-			meta.WordCount = total
-			meta.WordsInText = inText
-			meta.WordsInHeaders = inHeaders
-			meta.WordsInCaptions = inCaptions
-		} else {
-			meta.WordCount = countWords(content)
-		}
-	} else {
-		// Fallback to custom regex
-		meta.WordCount = countWords(content)
-	}
+	// Fast fallback word count immediately
+	meta.WordCount = countWords(content)
 
 	return meta, nil
 }
 
-// runTexCount uses the texcount utility to get accurate word counts.
-func runTexCount(path string) (int, int, int, int, error) {
+// RunTexCount uses the texcount utility to get accurate word counts.
+func RunTexCount(path string) (int, int, int, int, error) {
 	cmd := exec.Command("texcount", "-total", "-brief", path)
 	out, err := cmd.Output()
 	if err != nil {
