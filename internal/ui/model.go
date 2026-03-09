@@ -23,6 +23,11 @@ type Model struct {
 	focused   int // 0: Browser, 1: Inspector
 	filtering bool
 
+	// Layout cached sizes
+	browserWidth   int
+	inspectorWidth int
+	mainHeight     int
+
 	// Components
 	browser     FileBrowser
 	inspector   Inspector
@@ -95,6 +100,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.updateLayout()
+		m.browser.SetSize(m.browserWidth, m.mainHeight)
+		m.inspector.SetSize(m.inspectorWidth, m.mainHeight)
+		m.actionBar.SetWidth(m.width)
 
 	case tea.KeyMsg:
 		// Modal handling
@@ -320,6 +328,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case FileEventMsg:
 		// Queue a rescan and immediately re-listen
+		m.inspector.Refresh()
 		cmds = append(cmds, m.scanDirCmd(m.rootPath), m.listenForFileEventCmd())
 
 	case GlobalBibLoadedMsg:
@@ -437,13 +446,9 @@ func (m Model) diffCmd(msg RunDiffMsg) tea.Cmd {
 
 func (m *Model) updateLayout() {
 	footerHeight := 1
-	mainHeight := m.height - footerHeight
-	browserWidth := int(float64(m.width) * 0.35)
-	inspectorWidth := m.width - browserWidth
-
-	m.browser.SetSize(browserWidth, mainHeight)
-	m.inspector.SetSize(inspectorWidth, mainHeight)
-	m.actionBar.SetWidth(m.width)
+	m.mainHeight = m.height - footerHeight
+	m.browserWidth = int(float64(m.width) * 0.35)
+	m.inspectorWidth = m.width - m.browserWidth
 }
 
 func (m *Model) updateInspector() tea.Cmd {

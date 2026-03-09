@@ -20,11 +20,12 @@ const (
 
 // ActionBar is the bottom status/shortcut bar.
 type ActionBar struct {
-	width       int
-	status      BuildStatus
-	lastBuild   time.Duration
-	errorCount  int
-	projectRoot string
+	width        int
+	status       BuildStatus
+	lastBuild    time.Duration
+	errorCount   int
+	projectRoot  string
+	shortcutsStr string // Cached rendered shortcuts
 }
 
 // NewActionBar creates a new action bar.
@@ -34,26 +35,13 @@ func NewActionBar() ActionBar {
 	}
 }
 
-// SetWidth sets the action bar width.
+// SetWidth sets the action bar width and pre-renders shortcuts.
 func (ab *ActionBar) SetWidth(w int) {
 	ab.width = w
+	ab.rebuildShortcuts()
 }
 
-// SetBuildStatus updates the build status display.
-func (ab *ActionBar) SetBuildStatus(s BuildStatus, duration time.Duration, errors int) {
-	ab.status = s
-	ab.lastBuild = duration
-	ab.errorCount = errors
-}
-
-// SetProjectRoot sets the displayed project path.
-func (ab *ActionBar) SetProjectRoot(root string) {
-	ab.projectRoot = root
-}
-
-// View renders the action bar.
-func (ab ActionBar) View() string {
-	// Shortcuts
+func (ab *ActionBar) rebuildShortcuts() {
 	shortcuts := []struct {
 		key  string
 		desc string
@@ -73,7 +61,24 @@ func (ab ActionBar) View() string {
 		parts = append(parts, ActionKey.Render(s.key)+" "+ActionDesc.Render(s.desc))
 	}
 
-	left := strings.Join(parts, ActionSep.String())
+	ab.shortcutsStr = strings.Join(parts, ActionSep.String())
+}
+
+// SetBuildStatus updates the build status display.
+func (ab *ActionBar) SetBuildStatus(s BuildStatus, duration time.Duration, errors int) {
+	ab.status = s
+	ab.lastBuild = duration
+	ab.errorCount = errors
+}
+
+// SetProjectRoot sets the displayed project path.
+func (ab *ActionBar) SetProjectRoot(root string) {
+	ab.projectRoot = root
+}
+
+// View renders the action bar.
+func (ab ActionBar) View() string {
+	left := ab.shortcutsStr
 
 	// Status indicator
 	var statusStr string
