@@ -63,7 +63,7 @@ func NewModel(root, engine string) Model {
 	ti.Prompt = " / "
 	ti.CharLimit = 50
 
-	w, _ := core.NewWatcher(root)
+	w, _ := system.NewWatcher(root)
 
 	return Model{
 		rootPath:        root,

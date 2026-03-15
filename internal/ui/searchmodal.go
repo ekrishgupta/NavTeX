@@ -106,7 +106,7 @@ func (sm *SearchModal) filterEntries() {
 	if query == "" {
 		sm.results = sm.entries
 	} else {
-		filtered := make([]core.BibEntry, 0, len(sm.entries))
+		filtered := make([]latex.BibEntry, 0, len(sm.entries))
 		for i, cached := range sm.searchCache {
 			if strings.Contains(cached, query) {
 				filtered = append(filtered, sm.entries[i])

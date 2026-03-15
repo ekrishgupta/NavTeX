@@ -305,7 +305,7 @@ func (fb FileBrowser) View() string {
 		} else if i == fb.cursor && fb.focused {
 			name := truncate(item.display, fb.width-6)
 			lines = append(lines, FileItemSelected.Width(fb.width-4).Render(" "+name))
-		} else if item.category == core.CategoryAuxiliary {
+		} else if item.category == latex.CategoryAuxiliary {
 			lines = append(lines, FileItemDim.Render(truncate(item.display, fb.width-6)))
 		} else {
 			lines = append(lines, FileItem.Render(truncate(item.display, fb.width-6)))
