@@ -16,6 +16,7 @@ type Inspector struct {
 	width    int
 	height   int
 	focused  bool
+	style    InspectorBaseStyle
 
 	// Bib selection
 	selectedBibIdx int
@@ -30,8 +31,13 @@ type Inspector struct {
 }
 
 // NewInspector creates a new inspector.
-func NewInspector() Inspector {
-	return Inspector{}
+func NewInspector(style InspectorBaseStyle) Inspector {
+	return Inspector{style: style}
+}
+
+// SetStyle switches the inspector's visual style (focused / blurred).
+func (ins *Inspector) SetStyle(s InspectorBaseStyle) {
+	ins.style = s
 }
 
 // SetSize sets the inspector dimensions.
@@ -68,14 +74,11 @@ func (ins *Inspector) SetFile(path string, cat latex.FileCategory) {
 		return
 	}
 
-	// ext := strings.ToLower(filepath.Ext(path)) // No longer needed for category-based switch
-
 	switch ins.category {
 	case latex.CategorySource:
 		ins.texMeta, ins.err = latex.TexMetadata(path)
 
 	case latex.CategoryData:
-		// Check extension to decide if it's bib
 		if strings.HasSuffix(strings.ToLower(path), ".bib") {
 			ins.bibMeta, ins.err = latex.BibMetadata(path)
 		}
@@ -120,22 +123,25 @@ func (ins Inspector) SelectedBibKey() string {
 
 // View renders the inspector.
 func (ins Inspector) View() string {
+	s := ins.style
+	innerW := ins.width - 2
+
+	// Title bar
+	titleBar := s.TitleBar.Width(innerW).Render("🔍 Inspector")
+
 	var content string
 
 	if ins.path == "" {
-		content = lipgloss.Place(ins.width-4, ins.height-2, lipgloss.Center, lipgloss.Center,
-			lipgloss.JoinVertical(lipgloss.Center,
-				FileItemDim.Render("Select a file to inspect"),
-			),
+		content = lipgloss.Place(innerW, ins.height-3, lipgloss.Center, lipgloss.Center,
+			DimText.Render("Select a file to inspect"),
 		)
 	} else if ins.err != nil {
 		content = lipgloss.JoinVertical(lipgloss.Left,
-			InspectorTitle.Render(filepath.Base(ins.path)),
+			s.SectionTitle.Render(filepath.Base(ins.path)),
 			"",
-			ErrorText.Render("Error: "+ins.err.Error()),
+			s.ErrorText.Render("Error: "+ins.err.Error()),
 		)
 	} else {
-		// ext := strings.ToLower(filepath.Ext(ins.path)) // No longer needed for category-based switch
 		switch ins.category {
 		case latex.CategorySource:
 			content = ins.renderTexMeta()
@@ -152,50 +158,58 @@ func (ins Inspector) View() string {
 		}
 	}
 
-	border := PaneBorder
-	if ins.focused {
-		border = PaneBorderActive
-	}
-
-	return border.Width(ins.width).Height(ins.height).Render(content)
+	return lipgloss.NewStyle().Width(ins.width).Height(ins.height).Margin(0, 1).
+		Render(lipgloss.JoinVertical(lipgloss.Left, titleBar, content))
 }
 
 // renderTexMeta renders .tex file metadata.
 func (ins Inspector) renderTexMeta() string {
+	s := ins.style
 	m := ins.texMeta
 	lines := []string{
-		InspectorTitle.Render("📄 " + filepath.Base(ins.path)),
+		s.SectionTitle.Render("📄 " + filepath.Base(ins.path)),
 		"",
 	}
 
 	// Document info
 	if m.Title != "" {
-		lines = append(lines, MetaLabel.Render("Title")+" "+MetaValue.Render(m.Title))
+		lines = append(lines, s.MetaLabel.Render("Title")+s.MetaValue.Render(m.Title))
 	}
 	if m.Author != "" {
-		lines = append(lines, MetaLabel.Render("Author")+" "+MetaValue.Render(m.Author))
+		lines = append(lines, s.MetaLabel.Render("Author")+s.MetaValue.Render(m.Author))
 	}
-	lines = append(lines, MetaLabel.Render("Class")+" "+MetaValue.Render(m.DocumentClass))
+	lines = append(lines, s.MetaLabel.Render("Class")+s.MetaValue.Render(m.DocumentClass))
 	if m.ClassOptions != "" {
-		lines = append(lines, MetaLabel.Render("Options")+" "+MetaValue.Render(m.ClassOptions))
+		lines = append(lines, s.MetaLabel.Render("Options")+s.MetaValue.Render(m.ClassOptions))
 	}
-	lines = append(lines, MetaLabel.Render("Word Count")+" "+MetaValue.Render(fmt.Sprintf("%d", m.WordCount)))
+
+	lines = append(lines,
+		"",
+		SeparatorLine(ins.width-8),
+		"",
+	)
+
+	lines = append(lines, s.MetaLabel.Render("Word Count")+s.MetaValue.Render(fmt.Sprintf("%d", m.WordCount)))
 	if m.WordsInText > 0 || m.WordsInHeaders > 0 || m.WordsInCaptions > 0 {
-		lines = append(lines, "  "+MetaLabel.Render("Words in Text")+" "+MetaValue.Render(fmt.Sprintf("%d", m.WordsInText)))
-		lines = append(lines, "  "+MetaLabel.Render("Words in Headers")+" "+MetaValue.Render(fmt.Sprintf("%d", m.WordsInHeaders)))
-		lines = append(lines, "  "+MetaLabel.Render("Words in Captions")+" "+MetaValue.Render(fmt.Sprintf("%d", m.WordsInCaptions)))
+		lines = append(lines, "  "+s.MetaLabel.Render("Text")+s.MetaValue.Render(fmt.Sprintf("%d", m.WordsInText)))
+		lines = append(lines, "  "+s.MetaLabel.Render("Headers")+s.MetaValue.Render(fmt.Sprintf("%d", m.WordsInHeaders)))
+		lines = append(lines, "  "+s.MetaLabel.Render("Captions")+s.MetaValue.Render(fmt.Sprintf("%d", m.WordsInCaptions)))
 	}
 
 	// Packages
 	if len(m.Packages) > 0 {
-		lines = append(lines, "", CategoryLabel.Render(fmt.Sprintf("Packages (%d)", len(m.Packages))))
+		lines = append(lines,
+			"",
+			SeparatorLine(ins.width-8),
+			"",
+			s.SectionTitle.Render(fmt.Sprintf("Packages (%d)", len(m.Packages))),
+		)
 		var pkgLine strings.Builder
 		for i, pkg := range m.Packages {
 			if i > 0 {
 				pkgLine.WriteString(" ")
 			}
-			pkgLine.WriteString(PackageTag.Render(pkg.Name))
-			// Wrap long lines
+			pkgLine.WriteString(s.PackageTag.Render(pkg.Name))
 			if pkgLine.Len() > ins.width-8 {
 				lines = append(lines, "   "+pkgLine.String())
 				pkgLine.Reset()
@@ -209,22 +223,23 @@ func (ins Inspector) renderTexMeta() string {
 	return strings.Join(lines, "\n")
 }
 
-// renderBibMeta renders .bib file metadata in a BibMan-inspired tabular format.
+// renderBibMeta renders .bib file metadata in a tabular format.
 func (ins Inspector) renderBibMeta() string {
+	s := ins.style
 	lines := []string{
-		InspectorTitle.Render("📚 " + filepath.Base(ins.path)),
-		MetaValue.Render(fmt.Sprintf("   %d entries", len(ins.bibMeta))),
+		s.SectionTitle.Render("📚 " + filepath.Base(ins.path)),
+		s.MetaValue.Render(fmt.Sprintf("   %d entries", len(ins.bibMeta))),
 		"",
 	}
 
 	if len(ins.bibMeta) == 0 {
-		lines = append(lines, FileItemDim.Render("  No entries found"))
+		lines = append(lines, DimText.Render("  No entries found"))
 		return strings.Join(lines, "\n")
 	}
 
 	// Column widths
 	maxAuth := 18
-	maxTitle := ins.width - maxAuth - 14 // year(4) + type(8) + padding
+	maxTitle := ins.width - maxAuth - 14
 	if maxTitle < 20 {
 		maxTitle = 20
 	}
@@ -232,8 +247,9 @@ func (ins Inspector) renderBibMeta() string {
 	// Header
 	header := fmt.Sprintf("  %-*s %-*s %-4s %-8s",
 		maxAuth, "Authors", maxTitle, "Title", "Year", "Type")
-	lines = append(lines, BibTableHeader.Render(header))
-	lines = append(lines, FileItemDim.Render("  "+strings.Repeat("─", min(ins.width-6, len(header)))))
+	headerStyle := lipgloss.NewStyle().Foreground(ColorPrimary).Bold(true)
+	lines = append(lines, headerStyle.Render(header))
+	lines = append(lines, DimText.Render("  "+SeparatorLine(min(ins.width-6, len(header)))))
 
 	// Entries
 	for i, entry := range ins.bibMeta {
@@ -243,25 +259,23 @@ func (ins Inspector) renderBibMeta() string {
 			maxAuth, authors, maxTitle, title, entry.Year, entry.Type)
 
 		if i == ins.selectedBibIdx && ins.focused {
-			lines = append(lines, BibTableRowSelected.Width(ins.width-4).Render(row))
+			lines = append(lines, s.SelectedRow.Width(ins.width-4).Render("▸"+row[1:]))
 		} else {
-			lines = append(lines, BibTableRow.Render(row))
+			lines = append(lines, s.UnselectedRow.Render(row))
 		}
 
-		// Show DOI/URL if present
 		if entry.DOI != "" {
-			lines = append(lines, FileItemDim.Render(fmt.Sprintf("    DOI: %s", entry.DOI)))
+			lines = append(lines, DimText.Render(fmt.Sprintf("    DOI: %s", entry.DOI)))
 		}
 
-		// Show keywords if present
 		if len(entry.Keywords) > 0 {
 			var kwLine strings.Builder
 			kwLine.WriteString("    ")
-			for i, kw := range entry.Keywords {
-				if i > 0 {
+			for j, kw := range entry.Keywords {
+				if j > 0 {
 					kwLine.WriteString(" ")
 				}
-				kwLine.WriteString(KeywordTag.Render(kw))
+				kwLine.WriteString(s.KeywordTag.Render(kw))
 			}
 			lines = append(lines, kwLine.String())
 		}
@@ -272,32 +286,34 @@ func (ins Inspector) renderBibMeta() string {
 
 // renderImageMeta renders image file metadata.
 func (ins Inspector) renderImageMeta() string {
+	s := ins.style
 	m := ins.imageMeta
 	lines := []string{
-		InspectorTitle.Render("🖼  " + filepath.Base(ins.path)),
+		s.SectionTitle.Render("🖼  " + filepath.Base(ins.path)),
 		"",
-		MetaLabel.Render("Format") + " " + MetaValue.Render(strings.ToUpper(m.Format)),
+		s.MetaLabel.Render("Format") + s.MetaValue.Render(strings.ToUpper(m.Format)),
 	}
 
 	if m.Width > 0 && m.Height > 0 {
-		lines = append(lines, MetaLabel.Render("Dimensions")+" "+MetaValue.Render(fmt.Sprintf("%d × %d px", m.Width, m.Height)))
+		lines = append(lines, s.MetaLabel.Render("Dimensions")+s.MetaValue.Render(fmt.Sprintf("%d × %d px", m.Width, m.Height)))
 	}
 
-	lines = append(lines, MetaLabel.Render("File Size")+" "+MetaValue.Render(latex.FormatSize(m.Size)))
+	lines = append(lines, s.MetaLabel.Render("File Size")+s.MetaValue.Render(latex.FormatSize(m.Size)))
 
 	return strings.Join(lines, "\n")
 }
 
 // renderGeneric renders basic file information.
 func (ins Inspector) renderGeneric() string {
+	s := ins.style
 	name := filepath.Base(ins.path)
 	ext := filepath.Ext(ins.path)
 
 	return strings.Join([]string{
-		InspectorTitle.Render("📎 " + name),
+		s.SectionTitle.Render("📎 " + name),
 		"",
-		MetaLabel.Render("Extension") + " " + MetaValue.Render(ext),
-		MetaLabel.Render("Category") + " " + MetaValue.Render(categoryName(ins.category)),
+		s.MetaLabel.Render("Extension") + s.MetaValue.Render(ext),
+		s.MetaLabel.Render("Category") + s.MetaValue.Render(categoryName(ins.category)),
 	}, "\n")
 }
 
