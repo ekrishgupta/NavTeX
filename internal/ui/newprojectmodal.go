@@ -62,7 +62,6 @@ func (npm *NewProjectModal) HandleKey(key tea.KeyMsg) tea.Cmd {
 		}
 	case tea.KeyEnter:
 		if npm.cursor == 3 {
-			// Submit
 			return npm.submit()
 		}
 		npm.cursor = (npm.cursor + 1) % 4
@@ -75,7 +74,6 @@ func (npm *NewProjectModal) HandleKey(key tea.KeyMsg) tea.Cmd {
 // submit creates the project and returns a command.
 func (npm *NewProjectModal) submit() tea.Cmd {
 	title := npm.fields[0]
-	// author := npm.fields[1]
 	template := npm.fields[2]
 	path := npm.fields[3]
 
@@ -106,7 +104,7 @@ func (npm NewProjectModal) View(termWidth, termHeight int) string {
 		modalW = termWidth - 4
 	}
 
-	title := ModalTitle.Render("New LaTeX Project")
+	title := ModalTitleBar.Render("New LaTeX Project")
 
 	var rows []string
 	for i, label := range npm.labels {
@@ -120,7 +118,7 @@ func (npm NewProjectModal) View(termWidth, termHeight int) string {
 		labelStr := InputLabel.Render(label + ":")
 		fieldStyle := InputField
 		if i == npm.cursor {
-			fieldStyle = fieldStyle.BorderForeground(ColorAccent)
+			fieldStyle = InputFieldActive
 		}
 		fieldStr := fieldStyle.Width(modalW - 16).Render(value)
 
@@ -130,10 +128,8 @@ func (npm NewProjectModal) View(termWidth, termHeight int) string {
 	var templateHint string
 	if npm.cursor == 2 {
 		templates := latex.GetAvailableTemplates()
-		templateHint = "\n  " + FileItemDim.Render("Available: "+strings.Join(templates, ", "))
+		templateHint = "\n  " + DimText.Render("Available: "+strings.Join(templates, ", "))
 	}
-
-	hint := FileItemDim.Render("  Tab: next field │ Enter on Path: create │ Esc: cancel")
 
 	content := lipgloss.JoinVertical(lipgloss.Left,
 		title,
@@ -141,9 +137,9 @@ func (npm NewProjectModal) View(termWidth, termHeight int) string {
 		strings.Join(rows, "\n"),
 		templateHint,
 		"",
-		hint,
+		ModalHint.Render("Tab: next field │ Enter on Path: create │ Esc: cancel"),
 	)
 
-	modal := ModalBox.Width(modalW).Render(content)
+	modal := ModalFrame.Width(modalW).Render(content)
 	return lipgloss.Place(termWidth, termHeight, lipgloss.Center, lipgloss.Center, modal)
 }
