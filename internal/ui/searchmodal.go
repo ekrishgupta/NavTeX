@@ -117,9 +117,6 @@ func (sm *SearchModal) filterEntries() {
 
 	if sm.index >= len(sm.results) {
 		sm.index = 0
-		if len(sm.results) > 0 {
-			sm.index = 0
-		}
 	}
 }
 
@@ -129,8 +126,12 @@ func (sm SearchModal) View(termWidth, termHeight int) string {
 		return ""
 	}
 
-	title := ModalTitle.Render("Global Bibliography Search")
+	title := ModalTitleBar.Render("Global Bibliography Search")
 	inputView := sm.input.View()
+
+	selectedStyle := lipgloss.NewStyle().Foreground(ColorPrimary).Bold(true)
+	unselectedStyle := lipgloss.NewStyle().Foreground(ColorFg)
+	metaStyle := lipgloss.NewStyle().Foreground(ColorGray)
 
 	var rows []string
 	maxRows := 10
@@ -141,18 +142,20 @@ func (sm SearchModal) View(termWidth, termHeight int) string {
 
 	for i := start; i < len(sm.results) && i < start+maxRows; i++ {
 		entry := sm.results[i]
-		style := FileItem
-		if i == sm.index {
-			style = FileItemSelected
-		}
 
-		key := style.Render(fmt.Sprintf("%-15s", entry.Key))
-		title := MetaValue.Render(truncate(entry.Title, 40))
-		rows = append(rows, "  "+key+" "+title)
+		if i == sm.index {
+			key := selectedStyle.Render(fmt.Sprintf("▸ %-15s", entry.Key))
+			titleStr := metaStyle.Render(truncate(entry.Title, 40))
+			rows = append(rows, " "+key+" "+titleStr)
+		} else {
+			key := unselectedStyle.Render(fmt.Sprintf("  %-15s", entry.Key))
+			titleStr := metaStyle.Render(truncate(entry.Title, 40))
+			rows = append(rows, " "+key+" "+titleStr)
+		}
 	}
 
 	if len(sm.results) == 0 {
-		rows = append(rows, "  "+FileItemDim.Render("No matches found"))
+		rows = append(rows, "  "+DimText.Render("No matches found"))
 	}
 
 	content := lipgloss.JoinVertical(lipgloss.Left,
@@ -163,9 +166,9 @@ func (sm SearchModal) View(termWidth, termHeight int) string {
 		"",
 		strings.Join(rows, "\n"),
 		"",
-		FileItemDim.Render(fmt.Sprintf("  %d / %d entries | Enter to copy \\cite{...}", sm.index+1, len(sm.results))),
+		ModalHint.Render(fmt.Sprintf("%d / %d entries │ Enter to copy \\cite{...}", sm.index+1, len(sm.results))),
 	)
 
-	modal := ModalBox.Width(60).Render(content)
+	modal := ModalFrame.Width(60).Render(content)
 	return lipgloss.Place(termWidth, termHeight, lipgloss.Center, lipgloss.Center, modal)
 }
