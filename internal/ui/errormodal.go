@@ -50,7 +50,6 @@ func (em *ErrorModal) IsVisible() bool {
 func (em *ErrorModal) MoveUp() {
 	if em.cursor > 0 {
 		em.cursor--
-		// Adjust scroll if cursor moves above viewport
 		if em.cursor < em.scroll {
 			em.scroll = em.cursor
 		}
@@ -61,8 +60,6 @@ func (em *ErrorModal) MoveUp() {
 func (em *ErrorModal) MoveDown() {
 	if em.cursor < len(em.entries)-1 {
 		em.cursor++
-		// Adjust scroll. Let's estimate visible rows (modalH-6). We'll handle this in View, but roughly let's do 10 for now, or just calculate it cleanly later.
-		// A simple way is to just let the View method correct the scroll if needed, but doing it here needs height. We'll add dynamic calculation.
 	}
 }
 
@@ -92,6 +89,9 @@ func (em ErrorModal) View(termWidth, termHeight int) string {
 	errors := latex.ErrorCount(em.entries)
 	warnings := latex.WarningCount(em.entries)
 
+	errorStyle := lipgloss.NewStyle().Foreground(ColorBrightRed).Bold(true)
+	warningStyle := lipgloss.NewStyle().Foreground(ColorYellow)
+
 	if modalW != em.modalW || modalH != em.modalH {
 		em.modalW = modalW
 		em.modalH = modalH
@@ -99,14 +99,21 @@ func (em ErrorModal) View(termWidth, termHeight int) string {
 		lineCol := 6
 		sevCol := 8
 		header := fmt.Sprintf("  %-*s %-*s %s", lineCol, "Line", sevCol, "Severity", "Message")
-		em.headerStr = BibTableHeader.Render(header) + "\n" + FileItemDim.Render("  "+strings.Repeat("─", modalW-8))
+		headerStyle := lipgloss.NewStyle().Foreground(ColorPrimary).Bold(true)
+		em.headerStr = headerStyle.Render(header) + "\n" + DimText.Render("  "+SeparatorLine(modalW-8))
 	}
 
 	lineCol := 6
 	sevCol := 8
 	msgCol := modalW - lineCol - sevCol - 12
 
-	title := ModalTitle.Render(fmt.Sprintf("Build Log — %d errors, %d warnings", errors, warnings))
+	title := ModalTitleBar.Render(fmt.Sprintf("Build Log — %d errors, %d warnings", errors, warnings))
+
+	// Use red-accented border if errors present
+	frame := ModalFrame
+	if errors > 0 {
+		frame = frame.BorderForeground(ColorBrightRed)
+	}
 
 	var rows []string
 
@@ -121,6 +128,8 @@ func (em ErrorModal) View(termWidth, termHeight int) string {
 		em.scroll = em.cursor - visibleRows + 1
 	}
 
+	selectedStyle := lipgloss.NewStyle().Foreground(ColorPrimary).Bold(true)
+
 	for i := em.scroll; i < len(em.entries) && len(rows) < visibleRows; i++ {
 		e := em.entries[i]
 		lineStr := "—"
@@ -132,16 +141,15 @@ func (em ErrorModal) View(termWidth, termHeight int) string {
 
 		var sev string
 		if e.Severity == "error" {
-			sev = ErrorText.Render("error")
+			sev = errorStyle.Render("✗ error")
 		} else {
-			sev = WarningText.Render("warning")
+			sev = warningStyle.Render("⚠ warn ")
 		}
 
 		row := fmt.Sprintf("  %-*s %-*s %s", lineCol, lineStr, sevCol, sev, msg)
 
-		// Highlight cursor
 		if i == em.cursor {
-			row = FileItemSelected.Width(modalW - 4).Render("▸" + row[1:])
+			row = selectedStyle.Width(modalW - 4).Render("▸" + row[1:])
 		} else {
 			row = " " + row[1:]
 		}
@@ -155,9 +163,9 @@ func (em ErrorModal) View(termWidth, termHeight int) string {
 		em.headerStr,
 		strings.Join(rows, "\n"),
 		"",
-		FileItemDim.Render("  Enter: jump to line │ Esc: close │ ↑/↓: move"),
+		ModalHint.Render("Enter: jump to line │ Esc: close │ ↑/↓: move"),
 	)
 
-	modal := ModalBox.Width(modalW).Render(content)
+	modal := frame.Width(modalW).Render(content)
 	return lipgloss.Place(termWidth, termHeight, lipgloss.Center, lipgloss.Center, modal)
 }
